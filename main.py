@@ -1,61 +1,42 @@
 # This is a sample Python script.
 # noinspection PyUnresolvedReferences
-import os.path
-from typing import List, Union
 
-from PySimpleGUI import Text, Button, Input
-
-print(os.path)
-import auth as slnet
-import get_user_id
-import get_user_info
 import starlineapi as sl
-import PySimpleGUI as gui
-import tkinter as tk
-import hashlib
-
-from get_app_code import get_app_code
-from get_app_token import get_app_token
-from get_slid_user_token import get_slid_user_token
-from get_slnet_token import get_slnet_token
+import PySimpleGUI as sg
+from time import sleep
 
 
 # Press Shift+F10 to execute it or replace it with your code.
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 def gui_login_window() -> object:
     layout = [
-        [gui.Text('Введите данные для авторизации:')],
-        [gui.Text('Login:', size=(15, 1)), gui.InputText('Введите логин', key='-Login-')],
-        [gui.Text('Password:', size=(15, 1)), gui.InputText('Введите пароль', key='-Password-')],
-        [gui.Text('AppId:', size=(15, 1)), gui.InputText('Введите номер приложения', key='-AppId-')],
-        [gui.Text('Secret:', size=(15, 1)), gui.InputText('Введите пароль приложения', key='-Secret-')],
-        [gui.Text('Slid:', size=(15, 1)), gui.InputText('ef9d7318df61dba1b824ec36bb220ddc:1045837', key='-Slid-')],
-        [gui.Button('Next'), gui.Cancel()]
+        [sg.Text('Введите данные для авторизации:')],
+        [sg.Text('Login:', size=(15, 1)), sg.InputText('Введите логин', key='-Login-')],
+        [sg.Text('Password:', size=(15, 1)), sg.InputText('Введите пароль', key='-Password-')],
+        [sg.Text('AppId:', size=(15, 1)), sg.InputText('Введите номер приложения', key='-AppId-')],
+        [sg.Text('Secret:', size=(15, 1)), sg.InputText('Введите пароль приложения', key='-Secret-')],
+        [sg.Text('Slid:', size=(15, 1)), sg.InputText('ef9d7318df61dba1b824ec36bb220ddc:1045837', key='-Slid-')],
+        [sg.Button('login', key='login ok'), sg.Cancel(key='login cansel')]
     ]
-    window = gui.Window('SLNetExportTrack', layout, size=(600, 300))
+    window = sg.Window('SLNetExportTrack', layout)
     return window
 
 
 def gui_object_window(auto) -> object:
     layout = [
-        [gui.Text('Выберете автомобиль с списка:')],
-        [gui.Text('Список авто:', size=(15, 1)), gui.InputCombo(auto, key='-List auto-')],
-        [gui.CalendarButton('Начало интервала'), gui.Text('Выберете дату')],
-        [gui.CalendarButton('Конец интервала '), gui.Text('Выберете дату')],
-        [gui.Button('Export'), gui.Cancel()]
+        [sg.Text('Выберете автомобиль с списка:')],
+        [sg.Text('Список авто:', size=(15, 1)), sg.InputCombo(auto, size=(15, 1), key='-List auto-')],
+        [sg.CalendarButton('Дата от', key='-start date-', format='%Y:%m:%d')],
+        [sg.InputText('00:00:00', key='-start time-')],
+        [sg.CalendarButton('Дата до', key='-end date-', format='%Y:%m:%d')],
+        [sg.InputText('23:59:59', key='-end time-')],
+        [sg.Button('Export'), sg.Cancel(), sg.Button('Login', button_color=('black', 'red'), key='login')]
     ]
-    window = gui.Window('SLNetExportTrack', layout, size=(600, 300))
+    window = sg.Window('SLNetExportTrack', layout)
     return window
 
 
-def gui_get_data(window):
-    pass
-
-
 def main():
-    step = 'login', 'object selection', 'period selection'
-    number_step = 0
-    auto = list()
     slid_token = "ef9d7318df61dba1b824ec36bb220ddc:1045837"
     user = sl.get_user_id(slid_token)
     slnet_token = sl.get_slnet_token(slid_token)
@@ -67,31 +48,43 @@ def main():
             print(shared_devices)
     else:
         print('data url error')
-
-    window = gui_login_window()
+    auto = list()
+    window = gui_object_window(auto)
 
     while True:
+        sleep(0.1)
         event, values = window.read()
         if event == 'Next':
-            try:
-                user = sl.get_user_id(values['-Slid-'])
-                slnet_token = sl.get_slnet_token(slid_token)
+            pass
+        elif event == 'login':
+            window_login = gui_login_window()
+            event_login, values_login = window_login.read()
+            if event_login == 'login ok':
+                auto.clear()
+                user = sl.get_user_id(values_login['-Slid-'])
+                slnet_token = sl.get_slnet_token(values_login['-Slid-'])
                 user_info = sl.get_user_info(user, slnet_token)
                 for devices in iter(user_info['devices']):
-                    print(devices['alias'])
                     auto.append(devices['imei'])
                 for shared_devices in iter(user_info['shared_devices']):
-                    print(shared_devices['alias'])
                     auto.append(shared_devices['imei'])
-
-                window.close()
-                window = gui_object_window(auto)
-            except KeyError:
-                print("Нет такого ключа")
-        elif event == gui.WIN_CLOSED or event == 'Cancel':
+                window['-List auto-'].update(values=auto)
+                window['login'].update(button_color=('black', 'green'))
+                del event_login, values_login
+                window_login.close()
+            elif event_login == "login cansel" or event_login == sg.WIN_CLOSED:
+                window_login.close()
+                del event_login, values_login
+        elif event == 'Export':
+            print(values)
+        elif event == sg.WIN_CLOSED or event == 'Cancel':
             print(event, values)
             window.close()
             break
+        # Обработка окна авторизации
+
+
+
 
 
 # Press the green button in the gutter to run the script.

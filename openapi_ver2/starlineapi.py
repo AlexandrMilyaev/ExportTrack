@@ -64,6 +64,19 @@ def get_user_info(user_id, slnet_token):
     return response
 
 
+def get_ways(devise_id, slnet_token, begin_track, end_trak) -> list:
+    '''
+    :param devise_id: идентификатор устройства
+    :param slnet_token: куки авторизации
+    :param begin_track: unix-время начала запрашиваемого трека
+    :param end_trak: unix-время конца запрашиваемого трека
+    :return: возвращаем масив точек
+    '''
+
+    nodes = list()
+    return nodes
+
+
 def get_args():
     parser = argparse.ArgumentParser()
     # для получения userId можно воспользоваться скриптом get_user_id.py

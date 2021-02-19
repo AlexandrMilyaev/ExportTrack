@@ -3,7 +3,8 @@
 
 import starlineapi as sl
 import PySimpleGUI as sg
-from time import sleep
+import time as tm
+import datetime as dt
 
 
 # Press Shift+F10 to execute it or replace it with your code.
@@ -26,17 +27,30 @@ def gui_object_window(auto) -> object:
     layout = [
         [sg.Text('Выберете автомобиль с списка:')],
         [sg.Text('Список авто:', size=(15, 1)), sg.InputCombo(auto, size=(15, 1), key='-List auto-')],
-        [sg.CalendarButton('Дата от', key='-start date-', format='%Y:%m:%d')],
-        [sg.InputText('00:00:00', key='-start time-')],
-        [sg.CalendarButton('Дата до', key='-end date-', format='%Y:%m:%d')],
-        [sg.InputText('23:59:59', key='-end time-')],
+        [sg.Input(key='-start date-', size=(20, 1)), sg.CalendarButton('Дата от')],
+        [sg.Input(key='-end date-', size=(20, 1)), sg.CalendarButton('Дата до')],
         [sg.Button('Export'), sg.Cancel(), sg.Button('Login', button_color=('black', 'red'), key='login')]
     ]
     window = sg.Window('SLNetExportTrack', layout)
     return window
 
 
+def time_to_unix(time: str, time_format="%Y-%m-%d %H:%M:%S") -> int:
+    '''
+    :param time: время в формате строки. Например, '2021-02-18 16:37:58'
+    :param time_format: формат времени, котрый принимаем. Например, "%Y-%m-%d %H:%M:%S"
+    :return: unix-время
+    '''
+
+    data = time
+    data = tm.strptime(data, time_format)
+    data = tm.mktime(data)
+    data = int(data)
+    return data
+
+
 def main():
+    '''
     slid_token = "ef9d7318df61dba1b824ec36bb220ddc:1045837"
     user = sl.get_user_id(slid_token)
     slnet_token = sl.get_slnet_token(slid_token)
@@ -48,11 +62,13 @@ def main():
             print(shared_devices)
     else:
         print('data url error')
+    '''
+    slnet_token = ''
     auto = list()
     window = gui_object_window(auto)
 
     while True:
-        sleep(0.1)
+        tm.sleep(0.1)
         event, values = window.read()
         if event == 'Next':
             pass
@@ -76,10 +92,8 @@ def main():
                 window_login.close()
                 del event_login, values_login
         elif event == 'Export':
-            begin = 1613700000
-            end = 1613732245
-            #print(values['-List auto-'])
-            #print(type(values))
+            begin = time_to_unix(values['-start date-'])
+            end = time_to_unix(values['-end date-'])
             device_id = int(values['-List auto-'])
             data = sl.get_ways(devise_id=device_id, slnet_token=slnet_token, begin_track=begin, end_trak=end)
             print(data)
@@ -89,9 +103,6 @@ def main():
             window.close()
             break
         # Обработка окна авторизации
-
-
-
 
 
 # Press the green button in the gutter to run the script.

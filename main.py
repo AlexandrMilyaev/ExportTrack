@@ -76,7 +76,14 @@ def main():
                 window_login.close()
                 del event_login, values_login
         elif event == 'Export':
-            print(values)
+            begin = 1613700000
+            end = 1613732245
+            #print(values['-List auto-'])
+            #print(type(values))
+            device_id = int(values['-List auto-'])
+            data = sl.get_ways(devise_id=device_id, slnet_token=slnet_token, begin_track=begin, end_trak=end)
+            print(data)
+            data.clear()
         elif event == sg.WIN_CLOSED or event == 'Cancel':
             print(event, values)
             window.close()

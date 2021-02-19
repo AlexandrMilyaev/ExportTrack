@@ -73,8 +73,21 @@ def get_ways(devise_id, slnet_token, begin_track, end_trak) -> list:
     :return: возвращаем масив точек
     '''
 
-    nodes = list()
-    return nodes
+    url = "https://developer.starline.ru/json/v1/device/{}/ways".format(devise_id)
+    logging.info('execute request: {}'.format(url))
+    cookies = "slnet={}".format(slnet_token)
+    data = {}
+    data["begin"] = begin_track
+    data["end"] = end_trak
+
+    r = requests.post(url, headers={"Cookie": "slnet=" + slnet_token}, json=data)
+    response = r.json()
+    r.close()
+    #logging.info('payload : {}'.format(payload))
+    logging.info('response info: {}'.format(r))
+    logging.info('response data: {}'.format(response))
+
+    return response
 
 
 def get_args():

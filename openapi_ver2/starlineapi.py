@@ -90,14 +90,33 @@ def get_ways(devise_id, slnet_token, begin_track, end_trak) -> list:
     return response
 
 
-def get_args():
-    parser = argparse.ArgumentParser()
-    # для получения userId можно воспользоваться скриптом get_user_id.py
-    parser.add_argument("-u", "--userId", dest="userId", help="user identifier", default="", required=True)
-    parser.add_argument("-s", "--slnetToken", dest="slnetToken", help="StarLineAPI Token", default="", required=True)
-    args = parser.parse_args()
-    logging.info('userId {}, slnetToken: {}'.format(args.userId, args.slnetToken))
-    return args
+class StarLine(object):
+
+    def get_ways(devise_id, slnet_token, begin_track, end_trak) -> list:
+        '''
+        :param devise_id: идентификатор устройства
+        :param slnet_token: куки авторизации
+        :param begin_track: unix-время начала запрашиваемого трека
+        :param end_trak: unix-время конца запрашиваемого трека
+        :return: возвращаем масив точек
+        '''
+
+        url = "https://developer.starline.ru/json/v1/device/{}/ways".format(devise_id)
+        logging.info('execute request: {}'.format(url))
+        cookies = "slnet={}".format(slnet_token)
+        data = {}
+        data["begin"] = begin_track
+        data["end"] = end_trak
+
+        r = requests.post(url, headers={"Cookie": "slnet=" + slnet_token}, json=data)
+        response = r.json()
+        r.close()
+        #logging.info('payload : {}'.format(payload))
+        logging.info('response info: {}'.format(r))
+        logging.info('response data: {}'.format(response))
+
+        return response
+
 
 
 if __name__ == "__main__":

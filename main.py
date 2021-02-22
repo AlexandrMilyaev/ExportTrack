@@ -70,9 +70,8 @@ def main():
     while True:
         tm.sleep(0.1)
         event, values = window.read()
-        if event == 'Next':
-            pass
-        elif event == 'login':
+
+        if event == 'login':
             window_login = gui_login_window()
             event_login, values_login = window_login.read()
             if event_login == 'login ok':

@@ -5,6 +5,7 @@ import starlineapi as sl
 from starlineapi import StarLine as SL
 import PySimpleGUI as sg
 import time as tm
+import json
 import datetime as dt
 
 
@@ -30,6 +31,7 @@ def gui_object_window(auto) -> object:
         [sg.Text('Список авто:', size=(15, 1)), sg.InputCombo(auto, size=(15, 1), key='-List auto-')],
         [sg.Input(key='-start date-', size=(20, 1)), sg.CalendarButton('Дата от')],
         [sg.Input(key='-end date-', size=(20, 1)), sg.CalendarButton('Дата до')],
+        [sg.Input(key='-user folders-', size=(20, 1)), sg.FolderBrowse(target='-user folders-')],
         [sg.Button('Export'), sg.Cancel(), sg.Button('Login', button_color=('black', 'red'), key='login')]
     ]
     window = sg.Window('SLNetExportTrack', layout)
@@ -51,20 +53,7 @@ def time_to_unix(time: str, time_format="%Y-%m-%d %H:%M:%S") -> int:
 
 
 def main():
-    '''
-    slid_token = "ef9d7318df61dba1b824ec36bb220ddc:1045837"
-    user = sl.get_user_id(slid_token)
-    slnet_token = sl.get_slnet_token(slid_token)
-    user_info = sl.get_user_info(user, slnet_token)
-    if user_info.get('codestring') == 'OK':
-        for devices in iter(user_info['devices']):
-            print(devices)
-        for shared_devices in iter(user_info['shared_devices']):
-            print(shared_devices)
-    else:
-        print('data url error')
-    '''
-    slnet_token = ''
+    slnet = SL()
     auto = list()
     window = gui_object_window(auto)
 
@@ -77,9 +66,8 @@ def main():
             event_login, values_login = window_login.read()
             if event_login == 'login ok':
                 auto.clear()
-                user = sl.get_user_id(values_login['-Slid-'])
-                slnet_token = sl.get_slnet_token(values_login['-Slid-'])
-                user_info = sl.get_user_info(user, slnet_token)
+                slnet.slnet_init(values_login['-Slid-'])
+                user_info = slnet.get_user_info(slnet.user_id)
                 for devices in iter(user_info['devices']):
                     auto.append(devices['imei'])
                 for shared_devices in iter(user_info['shared_devices']):
@@ -92,16 +80,38 @@ def main():
                 window_login.close()
                 del event_login, values_login
         elif event == 'Export':
-            begin = time_to_unix(values['-start date-'])
-            end = time_to_unix(values['-end date-'])
+            try:
+                begin = time_to_unix(values['-start date-'])
+                end = time_to_unix(values['-end date-'])
+            except Exception as e:
+                print(e)
             try:
                 device_id = int(values['-List auto-'])
-                data = SL.get_ways(devise_id=device_id, slnet_token=slnet_token, begin_track=begin, end_trak=end)
-                #data = sl.get_ways(devise_id=device_id, slnet_token=slnet_token, begin_track=begin, end_trak=end)
-                print(data)
+                data = slnet.get_ways(device_id, begin, end)
+            except Exception as e:
+                print(e)
+
+            try:
+                with open('exportfile.wln', 'w') as f:
+                    export = None
+                    print(slnet.data_ways)
+                    for key in iter(slnet.data_ways['way']):
+                        print(key)
+                        if key['type'] == 'TRACK':
+                            for point in iter(key['nodes']):
+                                print(point)
+                                f.write('REG;{};{};{};{};0;ALT:0.0,,;,,SATS:{},,,sat:{},;;;;\n'
+                                            .format(str(point['t']), str(point['y']), str(point['x']), str(point['s']),
+                                                    str(point['sat_qty']), str(point['sat_qty'])))
+                                #export += point
+                    print(export)
+                #with open('exportfile.wln', 'w') as f:
+                    #json.dumps(export, f)
                 data.clear()
-            except:
-                print("Выбирите авто из списка")
+            except Exception as e:
+                print(e)
+
+
 
         elif event == sg.WIN_CLOSED or event == 'Cancel':
             print(event, values)

@@ -2,6 +2,7 @@
 # noinspection PyUnresolvedReferences
 
 import starlineapi as sl
+from starlineapi import StarLine as SL
 import PySimpleGUI as sg
 import time as tm
 import datetime as dt
@@ -93,10 +94,15 @@ def main():
         elif event == 'Export':
             begin = time_to_unix(values['-start date-'])
             end = time_to_unix(values['-end date-'])
-            device_id = int(values['-List auto-'])
-            data = sl.get_ways(devise_id=device_id, slnet_token=slnet_token, begin_track=begin, end_trak=end)
-            print(data)
-            data.clear()
+            try:
+                device_id = int(values['-List auto-'])
+                data = SL.get_ways(devise_id=device_id, slnet_token=slnet_token, begin_track=begin, end_trak=end)
+                #data = sl.get_ways(devise_id=device_id, slnet_token=slnet_token, begin_track=begin, end_trak=end)
+                print(data)
+                data.clear()
+            except:
+                print("Выбирите авто из списка")
+
         elif event == sg.WIN_CLOSED or event == 'Cancel':
             print(event, values)
             window.close()

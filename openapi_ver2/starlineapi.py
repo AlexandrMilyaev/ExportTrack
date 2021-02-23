@@ -72,7 +72,7 @@ class StarLine(object):
         logging.info('response info: {}'.format(response))
         return response
 
-    def get_ways(self, devise_id: int, begin_track, end_trak) -> list:
+    def get_ways(self, devise_id: int, begin_track, end_trak) -> dict:
         '''
         :param self: 
         :param devise_id: идентификатор устройства

@@ -28,13 +28,24 @@ def gui_login_window() -> object:
 def gui_object_window(auto) -> object:
     layout = [
         [sg.Text('Выберете автомобиль с списка:')],
-        [sg.Text('Список авто:', size=(15, 1)), sg.InputCombo(auto, size=(15, 1), key='-List auto-')],
-        [sg.Input(key='-start date-', size=(20, 1)), sg.CalendarButton('Дата от')],
-        [sg.Input(key='-end date-', size=(20, 1)), sg.CalendarButton('Дата до')],
-        [sg.Input(key='-user folders-', size=(20, 1)), sg.FolderBrowse(target='-user folders-')],
-        [sg.Button('Export'), sg.Cancel(), sg.Button('Login', button_color=('black', 'red'), key='login')]
+        [sg.InputCombo(auto, size=(29, 1), key='-List auto-', default_value='-select-')],
+        [sg.Input(key='-start date-', size=(29, 1)), sg.CalendarButton('Дата от', size=(10, 1))],
+        [sg.Input(key='-end date-', size=(29, 1)), sg.CalendarButton('Дата до', size=(10, 1))],
+        [sg.Input(key='-user folders-', size=(29, 1)), sg.FolderBrowse(target='-user folders-', size=(10, 1))],
+        [sg.Button('Export', size=(10, 1)), sg.Cancel(size=(10, 1)), sg.Button('Login', button_color=('black', 'red'), key='login', size=(10, 1))]
     ]
     window = sg.Window('SLNetExportTrack', layout)
+    return window
+
+
+def gui_error_window(code, data):
+    layout = [
+        [sg.Text('Error: {}'.format(str(code)))],
+        [sg.Text(str(data))],
+        [sg.Ok()]
+    ]
+
+    window = sg.Window('Oops...', layout)
     return window
 
 
@@ -83,35 +94,52 @@ def main():
             try:
                 begin = time_to_unix(values['-start date-'])
                 end = time_to_unix(values['-end date-'])
-            except Exception as e:
-                print(e)
-            try:
                 device_id = int(values['-List auto-'])
                 data = slnet.get_ways(device_id, begin, end)
-            except Exception as e:
-                print(e)
-
-            try:
-                with open('exportfile.wln', 'w') as f:
-                    export = None
-                    print(slnet.data_ways)
-                    for key in iter(slnet.data_ways['way']):
-                        print(key)
-                        if key['type'] == 'TRACK':
-                            for point in iter(key['nodes']):
-                                print(point)
-                                f.write('REG;{};{};{};{};0;ALT:0.0,,;,,SATS:{},,,sat:{},;;;;\n'
+                print(data)
+                if data['code'] == 200:
+                    print(str(values['-user folders-'])+'exportfile.wln')
+                    if values['-user folders-']:
+                        filename = '{}/track{}_{}_{}.wln'.format(values['-user folders-'],
+                                                                 values['-List auto-'],
+                                                                 values['-start date-'],
+                                                                 values['-end date-'])
+                    else:
+                        filename = 'track{}_{}_{}.wln'.format(values['-List auto-'],
+                                                              values['-start date-'],
+                                                              values['-end date-'])
+                    with open(filename, 'w') as f:
+                        for key in iter(slnet.data_ways['way']):
+                            if key['type'] == 'TRACK':
+                                for point in iter(key['nodes']):
+                                    f.write('REG;{};{};{};{};0;ALT:0.0,,;,,SATS:{},,,sat:{},;;;;\n'
                                             .format(str(point['t']), str(point['y']), str(point['x']), str(point['s']),
                                                     str(point['sat_qty']), str(point['sat_qty'])))
-                                #export += point
-                    print(export)
-                #with open('exportfile.wln', 'w') as f:
-                    #json.dumps(export, f)
+                else:
+                    window_error = gui_error_window(data['code'], data['codestring'])
+                    error_event, error_values = window_error.read()
+                    if error_event == 'Ok' or error_event == sg.WIN_CLOSED:
+                        window_error.close()
+
                 data.clear()
             except Exception as e:
-                print(e)
-
-
+                if 'time data' in str(e.args):
+                    window_error = gui_error_window('Нет даты', 'Выбирите дату')
+                    error_event, error_values = window_error.read()
+                    if error_event == 'Ok' or error_event == sg.WIN_CLOSED:
+                        window_error.close()
+                elif 'invalid literal' in str(e.args):
+                    window_error = gui_error_window('Не выбран автомобиль',
+                                                    'Выбирите автомобиль из всплывающего списка, по которому требуеться експортировать маршрут')
+                    error_event, error_values = window_error.read()
+                    if error_event == 'Ok' or error_event == sg.WIN_CLOSED:
+                        window_error.close()
+                else:
+                    window_error = gui_error_window('Что то пошло не так!',
+                                                    str(e.args))
+                    error_event, error_values = window_error.read()
+                    if error_event == 'Ok' or error_event == sg.WIN_CLOSED:
+                        window_error.close()
 
         elif event == sg.WIN_CLOSED or event == 'Cancel':
             print(event, values)

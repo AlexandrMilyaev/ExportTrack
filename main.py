@@ -2,9 +2,10 @@
 # noinspection PyUnresolvedReferences
 
 import starlineapi as sl
-from starlineapi import StarLine as SL
+from starlineapi import StarLine
 import PySimpleGUI as sg
 import time as tm
+import requests
 import json
 import datetime as dt
 
@@ -16,9 +17,6 @@ def gui_login_window() -> object:
         [sg.Text('Введите данные для авторизации:')],
         [sg.Text('Login:', size=(15, 1)), sg.InputText('Введите логин', key='-Login-')],
         [sg.Text('Password:', size=(15, 1)), sg.InputText('Введите пароль', key='-Password-')],
-        [sg.Text('AppId:', size=(15, 1)), sg.InputText('Введите номер приложения', key='-AppId-')],
-        [sg.Text('Secret:', size=(15, 1)), sg.InputText('Введите пароль приложения', key='-Secret-')],
-        [sg.Text('Slid:', size=(15, 1)), sg.InputText('ef9d7318df61dba1b824ec36bb220ddc:1045837', key='-Slid-')],
         [sg.Button('login', key='login ok'), sg.Cancel(key='login cansel')]
     ]
     window = sg.Window('SLNetExportTrack', layout)
@@ -64,7 +62,7 @@ def time_to_unix(time: str, time_format="%Y-%m-%d %H:%M:%S") -> int:
 
 
 def main():
-    slnet = SL()
+    slnet = StarLine(2315, 'jpnUx4A1jMFFnA4YbBNj5KD8XtSAKBl8')
     auto = list()
     window = gui_object_window(auto)
 
@@ -77,8 +75,8 @@ def main():
             event_login, values_login = window_login.read()
             if event_login == 'login ok':
                 auto.clear()
-                slnet.slnet_init(values_login['-Slid-'])
-                user_info = slnet.get_user_info(slnet.user_id)
+                slnet.auth(values_login['-Login-'], values_login['-Password-'])
+                user_info = slnet.get_user_info()
                 for devices in iter(user_info['devices']):
                     auto.append(devices['imei'])
                 for shared_devices in iter(user_info['shared_devices']):
@@ -109,7 +107,7 @@ def main():
                                                               values['-start date-'],
                                                               values['-end date-'])
                     with open(filename, 'w') as f:
-                        for key in iter(slnet.data_ways['way']):
+                        for key in iter(data['way']):
                             if key['type'] == 'TRACK':
                                 for point in iter(key['nodes']):
                                     f.write('REG;{};{};{};{};0;ALT:0.0,,;,,SATS:{},,,sat:{},;;;;\n'
@@ -122,6 +120,12 @@ def main():
                         window_error.close()
 
                 data.clear()
+            except json.decoder.JSONDecodeError:
+                window_error = gui_error_window('502', 'Bad Gateway')
+                error_event, error_values = window_error.read()
+                if error_event == 'Ok' or error_event == sg.WIN_CLOSED:
+                    window_error.close()
+
             except Exception as e:
                 if 'time data' in str(e.args):
                     window_error = gui_error_window('Нет даты', 'Выбирите дату')
